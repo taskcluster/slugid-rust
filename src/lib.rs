@@ -1,20 +1,37 @@
 use base64;
-use uuid;
+use ring::rand::{SecureRandom, SystemRandom};
 
-/// Return a randomly-generated slugid.
-pub fn v4() -> String {
-    let mut enc = base64::encode_config(uuid::Uuid::new_v4().as_bytes(), base64::URL_SAFE);
+/// Generate a 16-byte representation of a v4 UUID.  We do not use the uuid crate because it does
+/// not use a CSPRNG.
+fn uuid_v4(rng: &dyn SecureRandom) -> [u8; 16] {
+    let mut bytes = [0u8; 16];
+    rng.fill(&mut bytes)
+        .expect("could not generate random values");
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // RFC4122
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // Random
+    bytes
+}
+
+fn encode(bytes: &[u8; 16]) -> String {
+    let mut enc = base64::encode_config(bytes, base64::URL_SAFE);
     enc.truncate(22); // strip trailing ==
     enc
 }
 
-/// In the rust implementation, (TODO: currently the same as v4())
+/// Return a randomly-generated slugid.
+pub fn v4() -> String {
+    let rng = SystemRandom::new();
+    let bytes = uuid_v4(&rng);
+    encode(&bytes)
+}
+
+/// Return a randomly-generated slugid that does not begin with `-`.  This is "nicer" in the sense
+/// that it is easily uesed on the command line.
 pub fn nice() -> String {
-    let mut bytes = *uuid::Uuid::new_v4().as_bytes();
-    bytes[0] = bytes[0] & 0x7f; // unset first bit to ensure [A-Za-f] first char
-    let mut enc = base64::encode_config(bytes, base64::URL_SAFE);
-    enc.truncate(22); // strip trailing ==
-    enc
+    let rng = SystemRandom::new();
+    let mut bytes = uuid_v4(&rng);
+    bytes[0] = bytes[0] & 0x7f; // unset first bit to ensure [A-Za-f] first char (niceness)
+    encode(&bytes)
 }
 
 #[cfg(test)]
