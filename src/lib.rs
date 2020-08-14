@@ -1,8 +1,20 @@
+//! Generate slugds.
+//!
+//! Slugids are fixed-length (22 characters) URL-safe random identifiers.  They contain enough
+//! entropy that for all practical purposes they can be considered unique.
+//!
+//! See https://github.com/taskcluster/slugid for details.
 use base64;
+use lazy_static::lazy_static;
 use ring::rand::{SecureRandom, SystemRandom};
+
+lazy_static! {
+    static ref RNG: SystemRandom = SystemRandom::new();
+}
 
 /// Generate a 16-byte representation of a v4 UUID.  We do not use the uuid crate because it does
 /// not use a CSPRNG.
+#[inline(always)]
 fn uuid_v4(rng: &dyn SecureRandom) -> [u8; 16] {
     let mut bytes = [0u8; 16];
     rng.fill(&mut bytes)
@@ -12,26 +24,36 @@ fn uuid_v4(rng: &dyn SecureRandom) -> [u8; 16] {
     bytes
 }
 
+/// Encode a UUID as a slugid (base64, url-safe, without padding)
+#[inline(always)]
 fn encode(bytes: &[u8; 16]) -> String {
     let mut enc = base64::encode_config(bytes, base64::URL_SAFE);
     enc.truncate(22); // strip trailing ==
     enc
 }
 
+/// Like `v4` but accepting a ring rng as a source of randomness.
+pub fn v4_rng(rng: &dyn SecureRandom) -> String {
+    let bytes = uuid_v4(rng);
+    encode(&bytes)
+}
+
+/// Like `nice` but accepting a ring rng as a source of randomness.
+pub fn nice_rng(rng: &dyn SecureRandom) -> String {
+    let mut bytes = uuid_v4(rng);
+    bytes[0] = bytes[0] & 0x7f; // unset first bit to ensure [A-Za-f] first char (niceness)
+    encode(&bytes)
+}
+
 /// Return a randomly-generated slugid.
 pub fn v4() -> String {
-    let rng = SystemRandom::new();
-    let bytes = uuid_v4(&rng);
-    encode(&bytes)
+    v4_rng(&*RNG)
 }
 
 /// Return a randomly-generated slugid that does not begin with `-`.  This is "nicer" in the sense
 /// that it is easily uesed on the command line.
 pub fn nice() -> String {
-    let rng = SystemRandom::new();
-    let mut bytes = uuid_v4(&rng);
-    bytes[0] = bytes[0] & 0x7f; // unset first bit to ensure [A-Za-f] first char (niceness)
-    encode(&bytes)
+    nice_rng(&*RNG)
 }
 
 #[cfg(test)]
@@ -83,6 +105,7 @@ mod test {
         ];
 
         spread_test(v4, expected);
+        spread_test(|| v4_rng(&SystemRandom::new()), expected);
     }
 
     #[test]
@@ -95,5 +118,6 @@ mod test {
         ];
 
         spread_test(nice, expected);
+        spread_test(|| nice_rng(&SystemRandom::new()), expected);
     }
 }
