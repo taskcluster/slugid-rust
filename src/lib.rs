@@ -27,9 +27,7 @@ fn uuid_v4(rng: &dyn SecureRandom) -> [u8; 16] {
 /// Encode a UUID as a slugid (base64, url-safe, without padding)
 #[inline(always)]
 fn encode(bytes: &[u8; 16]) -> String {
-    let mut enc = base64::encode_config(bytes, base64::URL_SAFE);
-    enc.truncate(22); // strip trailing ==
-    enc
+    base64::encode_config(bytes, base64::URL_SAFE_NO_PAD)
 }
 
 /// Like `v4` but accepting a ring rng as a source of randomness.
