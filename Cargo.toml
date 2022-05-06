@@ -1,6 +1,6 @@
 [package]
 name = "slugid"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Wander Lairson Costa <wander.lairson@gmail.com>", "Dustin J. Mitchell <dustin@mozilla.com>"]
 license = "MPL-2.0"
 description = "SlugId generation for Rust"
