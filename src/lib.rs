@@ -4,7 +4,7 @@
 //! entropy that for all practical purposes they can be considered unique.
 //!
 //! See https://github.com/taskcluster/slugid for details.
-use base64;
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use lazy_static::lazy_static;
 use ring::rand::{SecureRandom, SystemRandom};
 
@@ -27,7 +27,7 @@ fn uuid_v4(rng: &dyn SecureRandom) -> [u8; 16] {
 /// Encode a UUID as a slugid (base64, url-safe, without padding)
 #[inline(always)]
 fn encode(bytes: &[u8; 16]) -> String {
-    base64::encode_config(bytes, base64::URL_SAFE_NO_PAD)
+    URL_SAFE_NO_PAD.encode(bytes)
 }
 
 /// Like `v4` but accepting a ring rng as a source of randomness.

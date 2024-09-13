@@ -1,6 +1,6 @@
 [package]
 name = "slugid"
-version = "1.0.1"
+version = "1.0.2"
 authors = ["Wander Lairson Costa <wander.lairson@gmail.com>", "Dustin J. Mitchell <dustin@mozilla.com>"]
 license = "MPL-2.0"
 description = "SlugId generation for Rust"
@@ -10,6 +10,6 @@ documentation = "https://docs.rs/slugid/"
 edition = "2018"
 
 [dependencies]
-ring = { version = "0.16.15" }
-base64 = { version = "0.13" }
+base64 = "0.22.1"
 lazy_static = { version = "1.4.0" }
+ring = "0.17.8"
